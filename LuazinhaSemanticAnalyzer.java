@@ -48,23 +48,23 @@ public class LuazinhaSemanticAnalyzer extends LuazinhaBaseVisitor<Void> {
     public Void visitComandoAtribuicao(LuazinhaParser.ComandoAtribuicaoContext ctx) {
         visitChildren(ctx.listaexp());
         int tam = ctx.listavar().nomes.size();
-        for (int nome = 0; nome < tam; nome++) {
-            if (pilhaDeTabelas.existeSimbolo(ctx.listavar().nomes.get(nome)) == false) {
-                pilhaDeTabelas.topo().adicionarSimbolo(ctx.listavar().nomes.get(nome), "variavel");
+        for (int nome = 0; nome < tam; nome++) { // loop para cada nome
+            if (pilhaDeTabelas.existeSimbolo(ctx.listavar().nomes.get(nome)) == false) { // se o simbolo não existir ainda
+                pilhaDeTabelas.topo().adicionarSimbolo(ctx.listavar().nomes.get(nome), "variavel"); // adicionar simbolo novo na tabela
             }
         }
         return null;
     }
 
     public Void visitNomedafuncao(LuazinhaParser.NomedafuncaoContext ctx) {
-        pilhaDeTabelas.empilhar(new TabelaDeSimbolos(ctx.getText()));
+        pilhaDeTabelas.empilhar(new TabelaDeSimbolos(ctx.getText())); // cria uma nova tabela de simbolos para a função que vamos entrar
         visitChildren(ctx);
         return null;
     }
 
     public Void visitCorpodafuncao(LuazinhaParser.CorpodafuncaoContext ctx) {
         visitChildren(ctx);
-        pilhaDeTabelas.desempilhar();
+        pilhaDeTabelas.desempilhar(); // depois de visitar a função, removemos a tabela de simbolos
         return null;
     }
 
@@ -77,30 +77,30 @@ public class LuazinhaSemanticAnalyzer extends LuazinhaBaseVisitor<Void> {
     }
 
     public Void visitComandoFor1(LuazinhaParser.ComandoFor1Context ctx) {
-        pilhaDeTabelas.empilhar(new TabelaDeSimbolos("for"));
-        pilhaDeTabelas.topo().adicionarSimbolo(ctx.NOME().getText(), "variavel");
-        visitChildren(ctx);
-        pilhaDeTabelas.desempilhar();
+        pilhaDeTabelas.empilhar(new TabelaDeSimbolos("for")); // nova tabela de simbolos para o for que entramos
+        pilhaDeTabelas.topo().adicionarSimbolo(ctx.NOME().getText(), "variavel"); // adiciona a variavel definida dentro do for (contador por exemplo)
+        visitChildren(ctx); // visita o conteudo do for
+        pilhaDeTabelas.desempilhar(); // desempilha o for
         return null;
     }
 
     public Void visitComandoFor2(LuazinhaParser.ComandoFor2Context ctx) {
-        visitChildren(ctx.listaexp());
+        visitChildren(ctx.listaexp()); // visita as expressões para ver se não estamos usando uma variavel à direita antes de defini-la
 
-        pilhaDeTabelas.empilhar(new TabelaDeSimbolos("for"));
-        for (String elemento : ctx.listadenomes().nomes) {
+        pilhaDeTabelas.empilhar(new TabelaDeSimbolos("for")); // nova tabela de simbolos para o for que entramos
+        for (String elemento : ctx.listadenomes().nomes) { // para cara variavel definida dentro dos parenteses do for, adicionar para lista
             pilhaDeTabelas.topo().adicionarSimbolo(elemento, "variavel");
 
         }
-        visitChildren(ctx.bloco());
+        visitChildren(ctx.bloco()); // visita conteudo do for
 
-        pilhaDeTabelas.desempilhar();
+        pilhaDeTabelas.desempilhar(); // desempilha tabela do for
         return null;
     }
 
     public Void visitComandoLocalAtribuicao(LuazinhaParser.ComandoLocalAtribuicaoContext ctx) {
-        visitChildren(ctx);
-        for (String nome : ctx.listadenomes().nomes) {
+        visitChildren(ctx); // visita as expressões para ver se não estamos usando uma variavel à direita antes de defini-la 
+        for (String nome : ctx.listadenomes().nomes) { // para cada variavel à esquerda, adiciona na tabela
             pilhaDeTabelas.topo().adicionarSimbolo(nome, "variavel");
         }
 
@@ -116,8 +116,8 @@ public class LuazinhaSemanticAnalyzer extends LuazinhaBaseVisitor<Void> {
     }
 
     public Void visitExpPrefixo2Var(LuazinhaParser.ExpPrefixo2VarContext ctx) {
-        if (!pilhaDeTabelas.existeSimbolo(ctx.var().nome)) {
-            Mensagens.erroVariavelNaoExiste(ctx.var().linha, ctx.var().coluna, ctx.var().nome);
+        if (!pilhaDeTabelas.existeSimbolo(ctx.var().nome)) { // verifica se a variavel à direita de uma atribuição existe ou nao
+            Mensagens.erroVariavelNaoExiste(ctx.var().linha, ctx.var().coluna, ctx.var().nome); // caso não exista, da erro
 
         }
 
@@ -126,7 +126,7 @@ public class LuazinhaSemanticAnalyzer extends LuazinhaBaseVisitor<Void> {
 
     public Void visitListavar(LuazinhaParser.ListavarContext ctx) {
         for (String nome : ctx.nomes) {
-            if (!pilhaDeTabelas.existeSimbolo(nome)) {
+            if (!pilhaDeTabelas.existeSimbolo(nome)) { // adiciona variaveis à esquerda de uma atribuição em lista para a tabela (caso ja nao esteja)
                 pilhaDeTabelas.topo().adicionarSimbolo(nome, "variavel");
             }
         }
@@ -136,18 +136,18 @@ public class LuazinhaSemanticAnalyzer extends LuazinhaBaseVisitor<Void> {
 
     public Void visitListaParListaDeNomes(LuazinhaParser.ListaParListaDeNomesContext ctx) {
         for (String nome : ctx.listadenomes().nomes) {
-            pilhaDeTabelas.topo().adicionarSimbolo(nome, "parametro");
+            pilhaDeTabelas.topo().adicionarSimbolo(nome, "parametro"); // adiciona todos simbolos de uma lista de parametros na pilha
         }
         return visitChildren(ctx);
     }
 
     public Void visitComandoFunction(LuazinhaParser.ComandoFunctionContext ctx) {
-        pilhaDeTabelas.empilhar(new TabelaDeSimbolos(ctx.nomedafuncao().nome));
-        if (ctx.nomedafuncao().metodo) {
-            pilhaDeTabelas.topo().adicionarSimbolo("self", "parametro");
+        pilhaDeTabelas.empilhar(new TabelaDeSimbolos(ctx.nomedafuncao().nome)); // nova pilha para a funcao
+        if (ctx.nomedafuncao().metodo) { // se for funcao/metodo
+            pilhaDeTabelas.topo().adicionarSimbolo("self", "parametro"); // adiciona self como parametro
         }
-        visitChildren(ctx.corpodafuncao());
-        pilhaDeTabelas.desempilhar();
+        visitChildren(ctx.corpodafuncao()); // visita conteudo da funcao
+        pilhaDeTabelas.desempilhar(); // desempilha tabela da funcao
         return null;
     }
 }
